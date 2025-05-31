@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
-\usepackage{graphicx} % Required for inserting images
+\usepackage{graphicx} 
 \usepackage{setspace}
+\usepackage{indentfirst}
 %\usepackage[margin=1in]{geometry}
 \usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
 
@@ -16,6 +17,7 @@
 \begin{document}
 \doublespacing
 
+
 \maketitle
 
 \section{Introduction}
@@ -24,6 +26,39 @@
 
 \section{Methodology and Main Analysis}
 
-\section{Properties of Procedure}
+\section{Properties}
+
+Propensity score modeling with survey weights can provide meaningful advantages over the conventional multiple linear regression. It provides desirable properties for estimating treatment effects, greater robustness to modeling assumptions, and a more objective framework for analysis. However, certain limitations remain.
+
+\subsection{Estimation of Treatment Effect} 
+
+\subsubsection{Population Level Estimate}
+
+When observational data originate from a complex survey design, randomness is not achieved, thus it can be hard to extrapolate for a population level estimate. However, the incorporation of survey weights--predefined to represent the overall distribution of a population--counteracts this. Thus, when calculating weighted averages within each stratum, can more accurately reflect the distribution of the population. In fact, the paper indicates that weighted and unweighted analyses of gender salary led to differing results. The difference was caused by the underrepresentation of lower-paid mean and women in the sample relative to the population, implying that the unweighted results did a poorer job reflecting the population.
+
+\subsubsection{Unbiasedness}
+
+The average treatment effect is unbiased. Propensity score analysis subclassifies units into strata based on their estimated propensity scores--a balancing score. Thus, the distribution of the observed covariates are independent of the assignment mechanism. As a result, within strata, since it is homogeneous in the propensity score, the distributions of the covariates are the same between the treated and the control. Therefore, if the assumption of strongly ignorable treatment assignment holds, the difference between the treated and control units for a given propensity score is an unbiased estimate of the average treatment effect.
+
+
+\subsection{Robustness and Modeling Assumption}
+
+Although theugh the propensity score itself depends on the specification of the propensity score, the goal is to achieve balance in the sample. then correctly specifying the relationship between the outcome and covariates becomes less critical. This makes the propensity score method more robust than linear regression, which depends on the correctly specified relationship.
+
+However if covariates balance is not achieved, a typical resolution is the use regression adjustments within each strata to adjust for remaining differences. This involves fitting a regression model separately within each stratum. In such cases, reliance on a correctly specified linear relationship is reintroduced. Nonetheless, since units within each stratum are more homogeneous, the regression model is less sensitive to misspecification. As a result, according to previous research, the method remains more robust to violations of the linear model assumptions within each stratum.
+
+
+
+\subsection{Separation of the Modeling and Outcome Analysis}
+
+By the nature of the propensity score modeling, the sole focus is to achieve covariate balance. Thus, a propensity score model can be built and subclassification to be performed without ever looking at the outcome variables. Therefore, the analysis can be more objective as there is a complete separation between the modeling and the outcome analysis.
+
+\subsection{Limitations}
+
+Propensity score modeling, however, primarily estimates average treatment effect. It can obscure important interaction effects. For instance, the paper discusses the treatment effect of gender salary gap can vary across different geographic regions given years of experience. A single overall average estimate cannot fully capture these nuances. In contrast, linear regression can directly model these interactions.
+
+Furthermore, omitted variables that influence both the assignment mechanism and the outcome can lead to biased estimates. Secondly, including variables in the model that may have been affected by the treatment itself can lead to inaccurate results. For instance the inclusion of job rank--as women face discrimination in promotions to higher ranks--can lead to smaller gender gaps, but conceals the effect of discrimination.
+
+
 
 \end{document}
