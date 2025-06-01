@@ -2,13 +2,37 @@
 \usepackage{graphicx} % Required for inserting images
 
 \title{BIOSTAT M235 - Final Project}
-\author{}
-\date{May 2025}
+
+\author{Peike Li, Darren Lin, Timothy Shen}
+
+\date{June 2025}
+
+\usepackage{setspace}
+
+\doublespacing % set double-space line
+
+\usepackage{indentfirst}
 
 \begin{document}
 
 \maketitle
 
+\newpage
+
 \section{Introduction}
+
+In the paper “A Comparison of Propensity Score and Linear Regression Analysis of Complex Survey Data” by Elaine L. Zanutto, the author compares the use of propensity score analysis with multiple linear regression, with and without weights.
+Multiple linear regression can estimate the treatment effects in observational data using available covariates. Typically, this is done by regression the effect of interest on the covariates, treating the treatment assignment as an indicator function in the covariate combination. If the treatment assignment coefficient is significant, then a researcher can conclude that the treatment assignment does have a statistically significant effect on the treatment of interest, with the coefficient value representing the treatment effect.
+
+Propensity score analysis involves first estimating the probability of a treatment using the covariates of interest. This is done by regressing the treatment assignment on the covariates that are available and matching the resulting probabilities in each group with each other. Once the propensity scores are calculated, the subjects in a study are divided into strata, and the difference in mean treatments are calculated. The result is an unbiased estimate of the average treatment score.
+
+Both these analysis methods require the use of survey weights when using complex survey data. Survey weights represent the number of individuals in a population that a single population in a survey represents. Since the covariates used in modeling do not contain information on the survey weights, if survey weights are not used, there may be model misspecification, and the treatment effects may be biased.
+
+In the paper, Zannuto aims to compare these different modeling methods by applying the methods to the 1997 SESTAT database. The primary goals of her analysis are to understand the wage difference in men and women in different occupations in the field of computer science and understand the advantages and disadvantages of each method.
+
+\section{Set-Up}
+
+
+
 
 \end{document}
