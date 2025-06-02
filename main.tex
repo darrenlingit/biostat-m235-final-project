@@ -1,5 +1,5 @@
 \documentclass[12pt]{article}
-\usepackage{graphicx} 
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{indentfirst}
 %\usepackage[margin=1in]{geometry}
@@ -7,18 +7,21 @@
 
 % Useful packages
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
 \title{BIOSTAT M235 - Final Project}
-\author{}
-\date{May 2025}
+\author{Peike Li, Darren Lin, Timothy Shen}
+\date{June 2025}
 
 \begin{document}
 \doublespacing
 
 
 \maketitle
+
+\newpage
 
 \section{Introduction}
 
@@ -35,9 +38,73 @@ In the paper, Zannuto aims to compare these different modeling methods by applyi
 
 \section{Set Up}
 
+In a multiple linear regression model, the treatment effect can be estimated from the coefficient of the treatment assignment variable (often an indicator function). The model is usually in the form
+
+$$
+Y_i = \beta_0 + \beta_1 I(treatment = 1) + \beta_2 X_2 + ... + \beta_k X_k
+$$
+
+where $\beta_1$ is the treatment effect.
+
+In a propensity score model, the treatment propensity score model is in the form of $e(X) = \mathbb{P}(T = 1 \mid X)$, which is calculated from the logistic regression model $\log\left( \frac{e(X)}{1 - e(X)} \right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$. Each unit is then divided into different stratum based on their propensity scores. The average treatment effect is calculated as $ \Delta_1 = \sum_{k=1}^K \frac{n_{0k}}{N_0}(\bar{y}_{1k} - \bar{y}_{0k})$ where $k$ is the stratum, $\bar{y}_{1k}$ and $\bar{y}_{0k}$ are the mean outcome values of the treatment and control groups respectively, $n_{1k}$ is the number of treated units, and $N_1$ is the total number of treated units. The standard error is given by $\hat{s}(\Delta_1) = \sqrt{\sum_{k=1}^K \frac{n_{0k}^2}{N_0^2} (\frac{s^2_{1k}}{n_{1k}} + \frac{s^2_{0k}}{n_{0k}})}$. If there are still differences in covariate balance after propensity score modeling, the model can be reestimated using regression adjustments so that the average treatment effect is $\Delta_2 = \sum_{k=1}^s \frac{n_{1k}}{N_1} \hat{\beta}_{k,male}$ 
+
+When using survey weights, the ATE becomes
+
+$$
+\Delta_{w1} = \sum_{k=1}^{K} \left( 
+\frac{\sum_{i \in S0_k} w_i}{\sum_{k=1}^{K} \sum_{i \in S0_k} w_i} 
+\right) \left( 
+\frac{\sum_{i \in S1_k} w_i y_i}{\sum_{i \in S1_k} w_i} - 
+\frac{\sum_{i \in S0_k} w_i y_i}{\sum_{i \in S0_k} w_i} 
+\right)
+$$
+where $w_i$ are the survey weights for unit $i$ and $S_{1k}$ and $S_{0k}$ are the sets of treatment or control units respectively that are in stratum $k$.
+
+If a regression adjustment is used, the ATE instead becomes 
+
+$$ 
+\Delta_{w2} = \sum_{k=1}^{5} 
+\left( 
+\frac{\sum_{i \in S_{0k}} w_i}{\sum_{k=1}^{5} \sum_{i \in S_{0k}} w_i} 
+\right) 
+\hat{\beta}^{w}_{k,1}
+$$
+
+
+
 \section{Methodology and Main Analysis}
 
 \section{Properties}
 
+Propensity score modeling with survey weights can provide meaningful advantages over the conventional multiple linear regression. It provides desirable properties for estimating treatment effects, greater robustness to modeling assumptions, and a more objective framework for analysis. However, certain limitations remain.
+
+\subsection{Estimation of Treatment Effect} 
+
+\subsubsection{Population Level Estimate}
+
+When observational data originate from a complex survey design, randomness is not achieved, thus it can be hard to extrapolate for a population level estimate. However, the incorporation of survey weights--predefined to represent the overall distribution of a population--counteracts this. Thus, when calculating weighted averages within each stratum, can more accurately reflect the distribution of the population. In fact, the paper indicates that weighted and unweighted analyses of gender salary led to differing results. The difference was caused by the underrepresentation of lower-paid mean and women in the sample relative to the population, implying that the unweighted results did a poorer job reflecting the population.
+
+\subsubsection{Unbiasedness}
+
+The average treatment effect is unbiased. Propensity score analysis subclassifies units into strata based on their estimated propensity scores--a balancing score. Thus, the distribution of the observed covariates are independent of the assignment mechanism. As a result, within strata, since it is homogeneous in the propensity score, the distributions of the covariates are the same between the treated and the control. Therefore, if the assumption of strongly ignorable treatment assignment holds, the difference between the treated and control units for a given propensity score is an unbiased estimate of the average treatment effect.
+
+
+\subsection{Robustness and Modeling Assumption}
+
+Although theugh the propensity score itself depends on the specification of the propensity score, the goal is to achieve balance in the sample. then correctly specifying the relationship between the outcome and covariates becomes less critical. This makes the propensity score method more robust than linear regression, which depends on the correctly specified relationship.
+
+However if covariates balance is not achieved, a typical resolution is the use regression adjustments within each strata to adjust for remaining differences. This involves fitting a regression model separately within each stratum. In such cases, reliance on a correctly specified linear relationship is reintroduced. Nonetheless, since units within each stratum are more homogeneous, the regression model is less sensitive to misspecification. As a result, according to previous research, the method remains more robust to violations of the linear model assumptions within each stratum.
+
+
+
+\subsection{Separation of the Modeling and Outcome Analysis}
+
+By the nature of the propensity score modeling, the sole focus is to achieve covariate balance. Thus, a propensity score model can be built and subclassification to be performed without ever looking at the outcome variables. Therefore, the analysis can be more objective as there is a complete separation between the modeling and the outcome analysis.
+
+\subsection{Limitations}
+
+Propensity score modeling, however, primarily estimates average treatment effect. It can obscure important interaction effects. For instance, the paper discusses the treatment effect of gender salary gap can vary across different geographic regions given years of experience. A single overall average estimate cannot fully capture these nuances. In contrast, linear regression can directly model these interactions.
+
+Furthermore, omitted variables that influence both the assignment mechanism and the outcome can lead to biased estimates. Secondly, including variables in the model that may have been affected by the treatment itself can lead to inaccurate results. For instance the inclusion of job rank--as women face discrimination in promotions to higher ranks--can lead to smaller gender gaps, but conceals the effect of discrimination.
 
 \end{document}
