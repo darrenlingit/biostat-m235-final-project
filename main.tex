@@ -23,114 +23,90 @@
 
 \newpage
 
-\section{Introduction}
+\section{Introduction} \label{sec:intro}
 
-In the paper “A Comparison of Propensity Score and Linear Regression Analysis of Complex Survey Data” by Elaine L. Zanutto, the author compares the use of propensity score analysis with multiple linear regression, with and without weights.
+In the paper “A Comparison of Propensity Score and Linear Regression Analysis of Complex Survey Data” by Elaine L. Zanutto, the author compares the use of propensity score analysis and multiple linear regression (MLR), with and without weights \cite{zanutto_2022}. Both of these analysis methods require the use of survey weights when using complex survey data. Survey weights represent the number of individuals in a population that a single subpopulation in a survey represents. Since the covariates used in the naive modeling do not account for survey weights, there may be model misspecification, and the treatment effects may be biased.
 
-Multiple linear regression can estimate the treatment effects in observational data using available covariates. Typically, this is done by regression the effect of interest on the covariates, treating the treatment assignment as an indicator function in the covariate combination. If the treatment assignment coefficient is significant, then a researcher can conclude that the treatment assignment does have a statistically significant effect on the treatment of interest, with the coefficient value representing the treatment effect.
-
-Propensity score analysis involves first estimating the probability of a treatment using the covariates of interest. This is done by regressing the treatment assignment on the covariates that are available and matching the resulting probabilities in each group with each other. Once the propensity scores are calculated, the subjects in a study are divided into strata, and the difference in mean treatments are calculated. The result is an unbiased estimate of the average treatment score.
-
-Both these analysis methods require the use of survey weights when using complex survey data. Survey weights represent the number of individuals in a population that a single subpopulation in a survey represents. Since the covariates used in modeling do not contain information on the survey weights, if survey weights are not used, there may be model misspecification, and the treatment effects may be biased.
-
-In the paper, Zannuto aims to compare these different modeling methods by applying the methods to the 1997 SESTAT database. The primary goal of her analysis are to understand the wage difference in men and women in different occupations in the field of computer science and understand the advantages and disadvantages of each method.
+In the paper, Zannuto aims to compare these different modeling methods by applying them to the 1997 SESTAT database. The primary goal of her analysis is to understand the wage difference in men and women in different occupations in the field of computer science and to understand the advantages and disadvantages of each method.
 
 
-\section{Set Up}
+\section{Set Up} \label{sec:setup}
 
-In a multiple linear regression model, the treatment effect can be estimated from the coefficient of the treatment assignment variable (often an indicator function). The model is usually in the form
+In a MLR model, the treatment effect can be estimated from the coefficient of the treatment assignment variable (often an indicator function). The model is usually in the form $Y_i = \beta_0 + \beta_1 I(treatment = 1) + \beta_2 X_2 + ... + \beta_k X_k$ where $\beta_1$ is the treatment effect.
 
-$$
-Y_i = \beta_0 + \beta_1 I(treatment = 1) + \beta_2 X_2 + ... + \beta_k X_k
-$$
-
-where $\beta_1$ is the treatment effect.
-
-In a propensity score model, the treatment propensity score model is in the form of $e(X) = \mathbb{P}(T = 1 \mid X)$, which is calculated from the logistic regression model $\log\left( \frac{e(X)}{1 - e(X)} \right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$. Each unit is then divided into different stratum based on their propensity scores. The average treatment effect is calculated as $ \Delta_1 = \sum_{k=1}^K \frac{n_{0k}}{N_0}(\bar{y}_{1k} - \bar{y}_{0k})$ where $k$ is the stratum, $\bar{y}_{1k}$ and $\bar{y}_{0k}$ are the mean outcome values of the treatment and control groups respectively, $n_{1k}$ is the number of treated units, and $N_1$ is the total number of treated units. The standard error is given by $\hat{s}(\Delta_1) = \sqrt{\sum_{k=1}^K \frac{n_{0k}^2}{N_0^2} (\frac{s^2_{1k}}{n_{1k}} + \frac{s^2_{0k}}{n_{0k}})}$. If there are still differences in covariate balance after propensity score modeling, the model can be reestimated using regression adjustments so that the average treatment effect is $\Delta_2 = \sum_{k=1}^s \frac{n_{1k}}{N_1} \hat{\beta}_{k,male}$ 
+In a propensity score model, the treatment propensity score model is in the form of $e(X) = \mathbb{P}(T = 1 \mid X)$, which is calculated from the logistic regression model $\log\left( \frac{e(X)}{1 - e(X)} \right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$. Each unit is then divided into different strata based on their propensity scores. The average treatment effect (ATE) is calculated as $ \Delta_1 = \sum_{k=1}^K \frac{n_{0k}}{N_0}(\bar{y}_{1k} - \bar{y}_{0k})$ where $k$ is the stratum, $\bar{y}_{1k}$ and $\bar{y}_{0k}$ are the mean outcome values of the treatment and control groups respectively, $n_{1k}$ is the number of treated units, and $N_1$ is the total number of treated units. The standard error is given by $\hat{s}(\Delta_1) = \sqrt{\sum_{k=1}^K \frac{n_{0k}^2}{N_0^2} (\frac{s^2_{1k}}{n_{1k}} + \frac{s^2_{0k}}{n_{0k}})}$. If there are still differences in covariate balance after propensity score modeling, the model can be reestimated using regression adjustments so that the ATE is $\Delta_2 = \sum_{k=1}^s \frac{n_{1k}}{N_1} \hat{\beta}_{k,male}$ 
 
 When using survey weights, the ATE becomes
 
-$$
+\begin{equation}
 \Delta_{w1} = \sum_{k=1}^{K} \left( 
 \frac{\sum_{i \in S0_k} w_i}{\sum_{k=1}^{K} \sum_{i \in S0_k} w_i} 
 \right) \left( 
 \frac{\sum_{i \in S1_k} w_i y_i}{\sum_{i \in S1_k} w_i} - 
 \frac{\sum_{i \in S0_k} w_i y_i}{\sum_{i \in S0_k} w_i} 
-\right)
-$$
-where $w_i$ are the survey weights for unit $i$ and $S_{1k}$ and $S_{0k}$ are the sets of treatment or control units respectively that are in stratum $k$.
+\right) 
+\label{eq:ate_weights}
+\end{equation}
+where $w_i$ are the survey weights for unit $i$ and $S_{1k}$ and $S_{0k}$ are the sets of treatment or control units respectively that are in stratum $k$. If a regression adjustment is used, the ATE instead becomes 
 
-If a regression adjustment is used, the ATE instead becomes 
-
-$$ 
+\begin{equation}
 \Delta_{w2} = \sum_{k=1}^{5} 
 \left( 
 \frac{\sum_{i \in S_{0k}} w_i}{\sum_{k=1}^{5} \sum_{i \in S_{0k}} w_i} 
 \right) 
 \hat{\beta}^{w}_{k,1}
-$$
+\label{eq:ate_regadj}
+\end{equation}
 
 
 
-\section{Methodology and Main Analysis}
+\section{Methodology and Main Analysis} \label{sec:meth_analysis}
 
-The authors employed two methods, multiple linear regression (MLR) and propensity score analysis, to estimate the gender salary gap across four occupations in the U.S. information technology industry in 1997. Using data from the 1997 U.S. SESTAT database, which was collected through complex survey designs, they incorporated survey weights into both methods to ensure population-representative estimates.
+The paper evaluated these methods by estimating gender salary gaps across four IT occupations in the 1997 U.S. SESTAT survey, incorporating its survey weights. As a first step, the unadjusted gender gap was estimated by calculating difference of the weighted average salaries for men and women—showing women earned $7\%\text{--}12\%$ less than men across occupations. Then, to better isolate the gender effect, the authors accounted for potential confounding variables--including education and job-related covariates by running both MLR and propensity score methods.
 
-As an initial step, the authors estimated unadjusted gender differences in salary by calculating the average salary gap between men and women without controlling for any background characteristics. They (1) applied the survey weights to each individual, (2) computed the weighted average salary for men and women in each occupation, and (3) took the difference between the two. On average, women earned 7\% to 12\% less than men in the same occupation.
+First, survey-weighted MLRs were fitted for each occupation, with gender and its interactions. Wald F-tests assessed interaction significance. Then backward selection was applied to identify significant predictors. Diagnostic plots verified model specifications. The regression results showed significant gender salary gaps in all four occupations. 
 
-To better isolate the gender effect, the authors accounted for potential confounding variables in both MLR and propensity score analysis. These covariates included educational characteristics (e.g., years since the most recent degree, degree type) and job-related characteristics (e.g., hours worked per week, time spent on specific job functions).
+Next, propensity score analysis was used. For each occupation, they estimated the propensity score using an unweighted logistic regression that included the main effects for all covariates. The estimated propensity scores were used to subclassify the sample into five strata based on quintiles.
 
-For each occupation, the authors fitted a full survey-weighted multiple linear regression model predicting salary based on all covariates and their interactions with a binary indicator for gender. They used Wald F-tests to assess whether the interaction terms collectively improved model fit. For models with significant interaction effects, they applied backward selection to identify significant interaction terms. Residual and diagnostic plots were examined to evaluate model assumptions and goodness of fit. The regression results showed that, after controlling for education and job characteristics, significant gender salary gaps persisted in all four occupations. Additionally, the significant interaction term indicates that male software engineers received higher salary returns for experience, though the benefit diminished over time, as indicated by a negative quadratic term. Overall, the models confirmed expected associations between salary and experience, education, supervisory responsibilities, and geographic region, while also revealing persistent and nuanced gender-based disparities.
+Covariate balance was assessed using two-way ANOVAs for continuous variables and survey-weighted logistic regressions for binary ones, with the covariate as the outcome and gender, propensity score stratum, and their interaction as predictors. Nonsignificant gender and interaction terms indicated balance; otherwise, interaction and quadratic terms were added. Remaining imbalances were addressed by fitting survey-weighted MLRs within each stratum, regressing salary on gender and unbalanced covariates. The resulting gender coefficients were then used in equation \eqref{eq:ate_regadj} to estimate the overall gender salary gap. The propensity score analysis also revealed significant gender salary gaps across all four occupations.
 
-Next, the authors conducted a propensity score analysis. For each occupation, they estimated the propensity score, which is the probability of being male, using an unweighted logistic regression that included main effects for all covariates. No variables were excluded based on statistical insignificance, as the authors prioritized achieving adequate covariate overlap. The estimated propensity scores were used to subclassify the sample into five strata based on quintiles.
+Lastly, comparisons of weighted vs. unweighted models revealed that ignoring survey design led to differing results. Unweighted estimates of the gender salary gap were larger for computer programmers and software engineers, but smaller for computer systems analysts and information systems scientists.
 
-To assess covariate balance within each stratum, the authors conducted survey-weighted two-way ANOVAs for continuous covariates and survey-weighted logistic regressions for binary covariates. In these models, the covariate of interest served as the outcome, and the predictors included gender, propensity score stratum index, and their interaction. Nonsignificant main effects of gender and nonsignificant interaction terms indicated adequate covariate balance between men and women within strata. If imbalance remained, the authors refined the propensity score model by adding interaction or quadratic terms and repeated the balance testing process. The process of testing balance and adjusting model structure were repeated several times. 
+\section{Discussion} \label{sec:discussion}
 
-To adjust for any remaining imbalances, regression adjustments were used. They fitted a survey-weighted linear regression model within each stratum, regressing salary on the gender indicator and any covariates that remained unbalanced. The resulting gender coefficients were then used in equation (2.2) to estimate the overall gender salary gap. Consistent with the MLR results, the propensity score analysis revealed significant gender salary gaps across all four occupations after adjusting for educational and job-related covariates.
+In observational studies, MLR is a common method for estimating treatment effects \cite{doi:https://doi.org/10.1002/0470090456.ch5}. However, propensity score methods, with their matched design, can reduce bias and confounding \cite{rosenbaum19834}. In fact, in the field of public policy and epidemiology, the propensity score methodology has become more common. Thus, the paper offers a meaningful comparison of methods to complex survey design data. Propensity score modeling with survey weights can provide meaningful advantages over the conventional MLR. However, certain limitations remain.
 
-Finally, the authors examined the impact of ignoring the survey design by comparing results from weighted and unweighted versions of both the regression and propensity score analyses. They found that unweighted estimates of the gender salary gap were larger for computer programmers and software engineers, but smaller for computer systems analysts and information systems scientists. These discrepancies underscored the importance of accounting for survey weights when conducting inference with complex survey data.
+\subsection{Advantages} \label{subsec:advantages}
 
+%\subsubsection{Population Level Estimate} \label{subsubsec:pop_lev_est}
 
-\section{Discussion}
-In the context of observational data, multiple linear regression is the most common method in estimating treatment effects. However, existing literature has shown the propensity score methodology can reduce bias and confounding effect due to its matched design. In fact, in the field of public policy and epidemiology, the propensity score methodology has become more common. Thus, paper extends this comparison of methods to complex survey design through not only a simulation study but with real applicable data. 
+\textbf{Population Level Estimate}: Observational data from a complex survey design implies randomness is not achieved--making it difficult extrapolate for a population level estimate. Incorporating survey weights counteracts this. In fact, as discussed in Section \ref{sec:meth_analysis}, the weighted and unweighted analyses led to differing results. The difference was caused by the underrepresentation of the lower-paid men and women relative to the population, implying that the unweighted results did a poorer job reflecting the population.
 
-Propensity score modeling with survey weights can provide meaningful advantages over the conventional multiple linear regression. It provides desirable properties for estimating treatment effects, greater robustness to modeling assumptions, and a more objective framework for analysis. However, certain limitations remain.
+%\subsubsection{Unbiasedness} \label{subsubsec:unbias}
 
-\subsection{Advantages}
+\textbf{Unbiasedness}: Given that propensity score analysis stratifies units by their estimated propensity scores, it serves as a balance score implying that the observed covariates is independent of the assignment mechanism. Thus, within strata, since it is homogeneous in the propensity score, the distributions of the covariates are the same between the treated and the control. When the strong ignorability assumption holds, differences in outcomes between treated and control units within strata provide unbiased estimates of the ATE.
 
-\subsubsection{Population Level Estimate}
+%\subsubsection{Robustness and Modeling Assumption} \label{subsubsec:robust}
 
-Observational data from a complex survey design implies randomness is not achieved--making it difficult extrapolate for a population level estimate. Incorporating survey weights--predefined to represent the population--counteracts this. In fact, the paper indicates that weighted and unweighted analyses of gender salary led to differing results. The difference was caused by the under representation of lower-paid mean and women in the sample relative to the population, implying that the unweighted results did a poorer job reflecting the population.
-
-\subsubsection{Unbiasedness}
-
-The average treatment effect is unbiased. Propensity score analysis subclassifies units into strata based on their estimated propensity scores--a balancing score. This implies that the distribution of the observed covariates is independent of the assignment mechanism. As a result, within strata, since it is homogeneous in the propensity score, the distributions of the covariates are the same between the treated and the control. Therefore, if the assumption of strongly ignorable treatment assignment holds, the difference between the treated and control units for a given propensity score is an unbiased estimate of the average treatment effect.
-
-\subsubsection{Robustness and Modeling Assumption}
-
-Although the propensity score itself depends on its model specification, the goal is to achieve covariate balance. Thus unlike linear regression--where the relationship between the outcome and covariates is key--the propensity only cares about achieving balance--making it more robust.
-
-However if covariates balance is not achieved, a typical resolution is the use regression adjustments within each strata. This involves fitting a regression model within each stratum. In such cases, reliance on a correctly specified linear relationship is reintroduced. However, since units within each stratum are more homogeneous, the regression model is less sensitive to misspecification. 
+\textbf{Robustness in Modeling Assumption}: While propensity scores depend on model specification, the main goal is covariate balance, not modeling the outcome. Thus unlike linear regression, which assumes a functional form between covariates and outcome, propensity score methods are more robust to misspecification. Furthermore, if balance is not achieved, regression adjustments within strata can be used. However, since units in each stratum are more similar, these regression models are less sensitive to misspecification.
 
 
-\subsubsection{Separation of the Modeling and Outcome Analysis}
+%\subsubsection{Separation of the Modeling and Outcome Analysis} \label{subsubsec:sep}
 
-By the nature of the propensity score modeling, the sole focus is to achieve covariate balance. Thus, a propensity score model can be built and subclassification can be performed without ever looking at the outcome. Therefore, the analysis can be more objective since there is a complete separation between the modeling and the outcome analysis.
+\textbf{Sepration of Model and Outcome Analysis}: Propensity score models are constructed to achieve balance, and thus does not involve the outcome data. Therefore, the analysis can be more objective since there is a complete separation between the modeling and the outcome.
 
-\subsection{Limitations}
+\subsection{Limitations} \label{subsec:limitations}
 
-Propensity score modeling, however, primarily estimates average treatment effect. It can obscure important interaction effects. For instance, the paper discusses the treatment effect of gender salary gap can vary across different geographic regions given years of experience. A single overall average estimate cannot fully capture these nuances. In contrast, linear regression can directly model these interactions.
+Propensity score methods primarily estimate ATE and may miss important interactions. For example, the gender salary gap may vary by region or experience, which a single average cannot capture. In contrast, linear regression can directly model such interactions. Additionally, omitted confounders or post-treatment variables can bias results. For instance, including job rank—potentially influenced by gender bias—may understate true differences. These concerns, however, apply to both MLR and propensity score methods.
 
-Furthermore, omitted variables that influence both the assignment mechanism and the outcome can lead to biased estimates. Secondly, including variables in the model that may have been affected by the treatment itself can lead to inaccurate results. For instance the inclusion of job rank--as women face discrimination in promotions to higher ranks--can lead to smaller gender gaps, but conceals the effect of discrimination. However, these limits are common for both regression and propensity score analysis.
+\section{Final Comments} \label{sec:finalcomments}
 
-\section{Final Comments}
+The paper finds agreement between MLR and propensity score methods on the outcome of gender salary gaps. However, both methods rely on the assumption that all relevant confounders are observed and controlled. As discussed in Section \ref{subsec:limitations}, important covariates can be omitted. In the context of the paper, the exclusion of covariates like workplace culture or discrimination, can yield biased estimates for both. In practice, it would likely be beneficial to complement these methods with sensitivity analysis to understand the effects of these variables. Furthermore, future work could explore extending methods such as doubly robust estimators for complex survey design. It is of note, however, the likely reason that both methods agree is due to good overlap in covariate balance. Thus, furthermore, a good addition to the paper would be understanding the difference in methodology under the context of poor covariate balances. 
 
-The paper finds agreement between linear regression and propensity score methods on the outcome of gender salary gaps. However, both methods rely on the assumption that all relevant confounders are observed and controlled for. As discussed in {LIMITATIONS}, important covariates can be omitted. In the context of the paper, the exclusion of covariates like workplace culture or discrimination, can yield biased estimates for both. In practice, it would likely be beneficial to complement these methods with sensitivity analysis to understand the effects of these variables. Furthermore, future work could explore methods such as doubly robust estimators in the context of complex survey design. 
+Overall, in many fields, randomized controlled trials are often infeasible for estimating treatment effects. Researchers therefore rely on observational data, which frequently come from complex surveys. However, such data frequently come from complex survey designs, where the use of survey weights is essential for producing valid population-level inferences. In such cases, survey weights are essential for valid population-level inferences—particularly in public health, where large-scale surveys are common. This paper presents a proof-of-concept for applying propensity score methods with survey weights in these contexts.
 
-It is of note the likely reason that both methods agree is due to good overlap in covariate balance. Thus a good extension would be understanding the difference in methodology under the context of poor covariate balances. 
-
-Overall, it is very common in many fields in establishing treatment effects that Randomized Controlls Trials are infeasible. Thus, researchers are forced to rely heavily on observational data in estimating these effects. However, such data frequently come from complex survey designs, where the use of survey weights is essential for producing valid population-level inferences. This is especially prevalent in public health research, where large-scale surveys are a primary data source. The paper offers a proof-of-concept of using propensity score methodology with survey weights in these scenarios. 
-
+\bibliographystyle{plain}  % or "apalike", "ieeetr", "acm", etc.
+\bibliography{references}
 
 
 \end{document}
