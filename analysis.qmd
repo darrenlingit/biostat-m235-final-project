@@ -1,0 +1,27 @@
+---
+title: "analysis"
+format: html
+---
+
+# Libraries
+
+```{r}
+library(tidyverse)
+library(asciiSetupReader)
+library(here)
+here::i_am("analysis.qmd")
+```
+
+
+# Loading in Data
+
+```{r}
+df <- read_ascii_setup(
+  here("XXH2023_YRBS_Data.dat"), # data file is a .dat file (ASCII) file
+  here("2023XXH-SPSS.sps"), # setup file is a .SPS (SPSS) file
+  use_value_labels = TRUE,
+  use_clean_names = TRUE,
+  select_columns = NULL,
+  coerce_numeric = TRUE)
+```
+
