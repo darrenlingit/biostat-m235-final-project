@@ -1,27 +1,447 @@
 ---
-title: "analysis"
-format: html
+title: "M235 Causal Inference"
+subtitle: Final Project
+date: today
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    message: FALSE
+    cache: false
 ---
 
-# Libraries
+## Loading in data
 
 ```{r}
 library(tidyverse)
+library(VIM)
 library(asciiSetupReader)
-library(here)
-here::i_am("analysis.qmd")
+library(survey)
+library(pROC)
+library(ResourceSelection)
+library(tableone)
 ```
 
-
-# Loading in Data
-
 ```{r}
+# Loading in Data
 df <- read_ascii_setup(
-  here("XXH2023_YRBS_Data.dat"), # data file is a .dat file (ASCII) file
-  here("2023XXH-SPSS.sps"), # setup file is a .SPS (SPSS) file
+  "XXH2023_YRBS_Data.dat",     
+  "2023XXH-SPSS.sps",         
   use_value_labels = TRUE,
   use_clean_names = TRUE,
   select_columns = NULL,
-  coerce_numeric = TRUE)
+  coerce_numeric = TRUE
+)
+# colnames(df)
+# names(df)[sapply(df, is.numeric)]
+```
+
+Response variable: `Felt_sad_or_hopeless` (almost every day for >=2 weeks in a row so that they stopped doing some usual activities, during the 12 months before the survey): 1 = Yes, 2 = No.  
+
+```{r}
+table(df$Felt_sad_or_hopeless)
+```
+
+Main treatment: `Bullied_at_school`
+
+```{r}
+table(df$Bullied_at_school)
+```
+
+Other covariates: 
+
+```{r}
+table(df$Hours_of_sleep_on_school_night)
+```
+
+1. Demographics
+- Sex (`What_is_your_sex`)
+- Age (`How_old_are_you`)
+- Race (`What_is_your_race`)
+- Sexual identity (`Sexual_identity`)
+
+2. Family and Social Environment
+- Violence in neighborhood (`Saw_physical_violence_in_neighborhood`)
+- Unstable housing (`Experienced_unstable_housing`)
+- Family environment (`Ever_lived_w_parent_guardian_w_substance_abuse_ACE`)
+- Physical abuse (`Ever_parental_physical_abuse_ACEs`)
+
+3. Substance use
+- `Current_marijuana_use`
+
+4. Health behaviors
+- Breakfast eating (`Did_not_eat_breakfast`)
+- Physical exercise (`did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days`)
+- Sleep (`Hours_of_sleep_on_school_night`)
+
+## Subsetting and Cleaning
+
+```{r}
+# list of variables to keep
+kept_vars <- c(
+  # Response and treatment
+  "Felt_sad_or_hopeless",
+  "Bullied_at_school",
+  
+  # Survey weights
+  "Overall_Analysis_Weight",
+  
+  # Demographics
+  "What_is_your_sex",
+  "How_old_are_you",
+  "What_is_your_race",
+  "Sexual_identity",
+  
+  # Family and social environment
+  "Saw_physical_violence_in_neighborhood",
+  "Experienced_unstable_housing",
+  "Ever_lived_w_parent_guardian_w_substance_abuse_ACE",
+  "Ever_parental_physical_abuse_ACEs",
+  
+  # Substance use
+  "Current_marijuana_use",
+  
+  # Health behaviors
+  "Did_not_eat_breakfast",
+  "did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days",
+  "Hours_of_sleep_on_school_night"
+)
+
+# subset the dataset
+df_sub <- df[, kept_vars]
+
+# inspect missing values
+aggr(df_sub, numbers = TRUE, sortVars = TRUE, 
+     labels = names(df_sub), cex.axis = 0.7, gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
+matrixplot(df_sub)
+
+# missing values are dropped
+df_clean <- na.omit(df_sub)
+# change variable type
+df_clean$Felt_sad_or_hopeless <- ifelse(df_clean$Felt_sad_or_hopeless == 2, 0, 1)
+df_clean$Bullied_at_school <- factor(ifelse(df_clean$Bullied_at_school=="No", 0, 1))
+#df_clean$What_is_your_sex <- factor(ifelse(df_clean$What_is_your_sex=="Male", 0, 1))
+df_clean$How_old_are_you <- recode(df_clean$How_old_are_you,
+  "12 years old or younger" = 12,
+  "13 years old" = 13,
+  "14 years old" = 14,
+  "15 years old" = 15,
+  "16 years old" = 16,
+  "17 years old" = 17,
+  "18 years old or older" = 18
+)
+df_clean$is_white <- factor(ifelse(grepl("^E$", df_clean$What_is_your_race), 1, 0))
+df_clean$is_LGBTQ <- factor(ifelse(df_clean$Sexual_identity == "Heterosexual (straight)", 0, 1))
+#df_clean$Saw_physical_violence_in_neighborhood <- factor(ifelse(df_clean$Saw_physical_violence_in_neighborhood == "No", 0, 1))
+#df_clean$Experienced_unstable_housing <- factor(ifelse(df_clean$Experienced_unstable_housing == 2, 0, 1))
+#df_clean$Ever_lived_w_parent_guardian_w_substance_abuse_ACE <- factor(ifelse(df_clean$Ever_lived_w_parent_guardian_w_substance_abuse_ACE == "No", 0, 1))
+df_clean$Ever_parental_physical_abuse_ACEs <- factor(ifelse(df_clean$Ever_parental_physical_abuse_ACEs == "Never", 0, 1))
+df_clean$Current_marijuana_use <- factor(ifelse(df_clean$Current_marijuana_use == "0 times", 0, 1))
+#df_clean$Did_not_eat_breakfast <- factor(df_clean$Did_not_eat_breakfast)
+#df_clean$did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days <- factor(df_clean$did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days)
+df_clean$Hours_of_sleep_on_school_night <- as.numeric(substring(df_clean$Hours_of_sleep_on_school_night, 1, 2))
+head(df_clean)
+```
+
+## Survey-weighted unadjusted average difference
+
+```{r}
+#install.packages("survey")
+
+# create a survey design object
+design <- svydesign(
+  ids = ~1,
+  data = df_clean,
+  weights = ~Overall_Analysis_Weight
+)
+
+# compute weighted means for each "treatment" group
+mean_by_treatment <- svyby(
+  ~Felt_sad_or_hopeless,
+  ~Bullied_at_school,
+  design,
+  svymean,
+  na.rm = TRUE
+)
+
+print(mean_by_treatment)
+
+# calculate the weighted difference (ATE estimate)
+ate <- diff(mean_by_treatment$Felt_sad_or_hopeless)
+cat("Estimated ATE (difference in weighted means) of bullying:", round(ate, 2), "\n")
+
+```
+
+## Regression (weighted)
+
+### Fit a logistic regression model
+
+```{r}
+# logistic regression
+glm_fit <- glm(
+  Felt_sad_or_hopeless ~ Bullied_at_school * (What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
+    factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
+    Hours_of_sleep_on_school_night),
+  data = df_clean,
+  family = binomial(),
+  weights = Overall_Analysis_Weight
+)
+
+# reduced model with main effect only
+reduced <- glm(
+  Felt_sad_or_hopeless ~ Bullied_at_school + What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
+    factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
+    Hours_of_sleep_on_school_night,
+  data = df_clean,
+  family = binomial(),
+  weights = Overall_Analysis_Weight
+)
+
+# test all interaction
+anova(reduced, glm_fit, test = "Chi")
+# test interaction terms
+(drop1_results <- suppressWarnings(drop1(glm_fit, test = "Chi")))
+
+# add the significant interaction terms
+glm_fit <- glm(
+  Felt_sad_or_hopeless ~ Bullied_at_school + What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
+    factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
+    Hours_of_sleep_on_school_night + Bullied_at_school:is_white + Bullied_at_school:Experienced_unstable_housing,
+  data = df_clean,
+  family = binomial(),
+  weights = Overall_Analysis_Weight
+)
+
+summary(glm_fit)
+```
+
+### Diagnostics
+
+```{r}
+# ROC
+prob <- predict(glm_fit, type = "response")
+roc_obj <- roc(df_clean$Felt_sad_or_hopeless, prob)
+plot(roc_obj)
+auc(roc_obj)
+
+# Hosmer-Lemeshow
+binned_df <- df_clean %>%
+  mutate(
+    predprob = predict(glm_fit, type = "response"),  # predicted probabilities
+    linpred  = predict(glm_fit, type = "link"),      # linear predictor (logit)
+    bin = cut(linpred, breaks = unique(quantile(linpred, probs = (1:100)/101, na.rm = TRUE)))
+  ) %>%
+  group_by(bin) %>%
+  summarize(
+    y = sum(Felt_sad_or_hopeless == 1, na.rm = TRUE),     # observed 1s in the bin
+    avgpred = mean(predprob, na.rm = TRUE),               # average predicted prob
+    count = n(),                                          # number of obs in bin
+    .groups = "drop"
+  ) %>%
+  mutate(
+    obs_prop = y / count,
+    se_fit = sqrt(avgpred * (1 - avgpred) / count)        # standard error of binomial proportion
+  )
+
+# plot observed vs predicted
+ggplot(binned_df, aes(x = avgpred, y = obs_prop)) +
+  geom_point() +
+  geom_linerange(aes(ymin = obs_prop - 2 * se_fit,
+                     ymax = obs_prop + 2 * se_fit), alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
+  labs(x = "Predicted probability", y = "Observed proportion",
+       title = "Calibration Plot (Observed vs Predicted)") +
+  theme_minimal()
+```
+
+## Propensity Score Analysis (weighted)
+
+### Fit a propensity model
+
+```{r}
+# fit a unweighted logistic regression model for propensity score 
+propensity_model <- glm(
+  Bullied_at_school ~ What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
+    factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
+    Hours_of_sleep_on_school_night,
+  data = df_clean,
+  family = binomial()
+)
+# estimate propensity scores
+df_clean$propensity_score <- predict(propensity_model, type = "response")
+# create 5 strata based on quantiles of propensity scores
+df_clean$ps_stratum <- cut(
+  df_clean$propensity_score,
+  breaks = quantile(df_clean$propensity_score, probs = seq(0, 1, by = 0.2), na.rm = TRUE),
+  include.lowest = TRUE,
+  labels = paste0("Q", 1:5)
+)
+# check number of individuals in each stratum
+table(df_clean$ps_stratum)
+```
+
+### Check balance
+
+```{r}
+# visually check overlap
+ggplot(df_clean, aes(x = propensity_score, fill = Bullied_at_school)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ ps_stratum) +
+  labs(title = "Propensity Score Distributions by Stratum",
+       x = "Propensity Score", fill = "Bullied at School")
+```
+
+
+```{r}
+# Standardized Mean Differences (SMD) by Stratum
+# Define covariates used in the propensity model
+covariates <- c("What_is_your_sex", "How_old_are_you", "is_white", "is_LGBTQ",
+                "Saw_physical_violence_in_neighborhood", "Experienced_unstable_housing",
+                "Ever_lived_w_parent_guardian_w_substance_abuse_ACE", "Ever_parental_physical_abuse_ACEs",
+                "Current_marijuana_use", "Did_not_eat_breakfast",
+                "did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days",
+                "Hours_of_sleep_on_school_night")
+
+# Create table stratified by treatment group, within strata
+for (q in levels(df_clean$ps_stratum)) {
+  cat("\n\n==============================\n")
+  cat("Balance in Stratum", q, "\n")
+  cat("==============================\n")
+  
+  stratified_data <- df_clean[df_clean$ps_stratum == q, ]
+  
+  tab <- CreateTableOne(vars = covariates, strata = "Bullied_at_school", data = stratified_data, factorVars = covariates)
+  print(tab, smd = TRUE)
+}
+```
+
+### Compute ATE
+
+
+$$
+\Delta_{w1} = \sum_{k=1}^{K} \left( 
+\frac{\sum_{i \in S0_k} w_i}{\sum_{k=1}^{K} \sum_{i \in S0_k} w_i} 
+\right) \left( 
+\frac{\sum_{i \in S1_k} w_i y_i}{\sum_{i \in S1_k} w_i} - 
+\frac{\sum_{i \in S0_k} w_i y_i}{\sum_{i \in S0_k} w_i} 
+\right)
+$$
+
+
+
+```{r}
+
+K <- length(levels(df_clean$ps_stratum))
+
+# get the denominator for weights of control units 
+total_weight_control <- sum(df_clean$Overall_Analysis_Weight[df_clean$Bullied_at_school == 0])
+
+# initialize ATE accumulator
+ATE <- 0
+
+for (k in levels(df_clean$ps_stratum)) {
+  # subset data for stratum k
+  data_k <- df_clean[df_clean$ps_stratum == k, ]
+  
+  # control units in stratum k
+  control_k <- data_k[data_k$Bullied_at_school == 0, ]
+  # treated units in stratum k
+  treated_k <- data_k[data_k$Bullied_at_school == 1, ]
+  
+  # sum weights for control in stratum k
+  sum_w_control_k <- sum(control_k$Overall_Analysis_Weight)
+  # sum weights for treated in stratum k
+  sum_w_treated_k <- sum(treated_k$Overall_Analysis_Weight)
+  
+  # weighted average outcome in treated group of stratum k
+  weighted_outcome_treated_k <- sum(treated_k$Overall_Analysis_Weight * treated_k$Felt_sad_or_hopeless) / sum_w_treated_k
+  # Weighted average outcome in control group of stratum k
+  weighted_outcome_control_k <- sum(control_k$Overall_Analysis_Weight * control_k$Felt_sad_or_hopeless) / sum_w_control_k
+  
+  # Weight factor for this stratum
+  weight_factor_k <- sum_w_control_k / total_weight_control
+  
+  # Increment ATE
+  ATE <- ATE + weight_factor_k * (weighted_outcome_treated_k - weighted_outcome_control_k)
+}
+
+cat("Estimated ATE from propensity score strata:", round(ATE, 2), "\n")
+```
+
+## Regression (unweighted)
+
+```{r}
+glm_fit_unweighted <- glm(
+  Felt_sad_or_hopeless ~ Bullied_at_school + What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
+    factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
+    Hours_of_sleep_on_school_night + Bullied_at_school:is_white + Bullied_at_school:Experienced_unstable_housing,
+  data = df_clean,
+  family = binomial(),
+  weights = Overall_Analysis_Weight
+)
+
+summary(glm_fit_unweighted)
+```
+
+
+
+```{r}
+prob_unweight <- predict(glm_fit_unweighted, type = "response")
+roc_obj_unweight <- roc(df_clean$Felt_sad_or_hopeless, prob_unweight)
+plot(roc_obj_unweight)
+auc(roc_obj_unweight)
+```
+
+
+
+```{r}
+binned_unweight_df <- df_clean %>%
+  mutate(
+    predprob_unweight = predict(glm_fit_unweighted, type = "response"),  # predicted probabilities for unweighted
+    linpred_unweight  = predict(glm_fit_unweighted, type = "link"),      # linear predictor (logit)
+    bin = cut(linpred_unweight, breaks = unique(quantile(linpred_unweight, probs = (1:100)/101, na.rm = TRUE)))
+  ) %>%
+  group_by(bin) %>%
+  summarize(
+    y = sum(Felt_sad_or_hopeless == 1, na.rm = TRUE),     # observed 1s in the bin
+    avgpred = mean(predprob_unweight, na.rm = TRUE),      # average predicted prob
+    count = n(),                                          # number of obs in bin
+    .groups = "drop"
+  ) %>%
+  mutate(
+    obs_prop = y / count,
+    se_fit = sqrt(avgpred * (1 - avgpred) / count)        # standard error of binomial proportion
+  )
+
+# plot observed vs predicted
+ggplot(binned_unweight_df, aes(x = avgpred, y = obs_prop)) +
+  geom_point() +
+  geom_linerange(aes(ymin = obs_prop - 2 * se_fit,
+                     ymax = obs_prop + 2 * se_fit), alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
+  labs(x = "Predicted probability", y = "Observed proportion",
+       title = "Calibration Plot (Observed vs Predicted)") +
+  theme_minimal()
 ```
 
