@@ -19,7 +19,7 @@ knitr:
     cache: false
 ---
 
-## Loading in data
+# Loading in data
 
 ```{r}
 library(tidyverse)
@@ -83,7 +83,7 @@ table(df$Hours_of_sleep_on_school_night)
 - Physical exercise (`did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days`)
 - Sleep (`Hours_of_sleep_on_school_night`)
 
-## Subsetting and Cleaning
+# Subsetting and Cleaning
 
 ```{r}
 # list of variables to keep
@@ -154,7 +154,7 @@ df_clean$Hours_of_sleep_on_school_night <- as.numeric(substring(df_clean$Hours_o
 head(df_clean)
 ```
 
-## Survey-weighted unadjusted average difference
+# Survey-weighted unadjusted average difference
 
 ```{r}
 #install.packages("survey")
@@ -183,9 +183,9 @@ cat("Estimated ATE (difference in weighted means) of bullying:", round(ate, 2), 
 
 ```
 
-## Regression (weighted)
+# Regression (Weighted)
 
-### Fit a logistic regression model
+## Fit a logistic regression model
 
 ```{r}
 # logistic regression
@@ -232,7 +232,7 @@ glm_fit <- glm(
 summary(glm_fit)
 ```
 
-### Diagnostics
+## Diagnostics
 
 ```{r}
 # ROC
@@ -271,9 +271,9 @@ ggplot(binned_df, aes(x = avgpred, y = obs_prop)) +
   theme_minimal()
 ```
 
-## Propensity Score Analysis (weighted)
+# Propensity Score Analysis (weighted)
 
-### Fit a propensity model
+## Fit a propensity model
 
 ```{r}
 # fit a unweighted logistic regression model for propensity score 
@@ -299,7 +299,7 @@ df_clean$ps_stratum <- cut(
 table(df_clean$ps_stratum)
 ```
 
-### Check balance
+## Check balance
 
 ```{r}
 # visually check overlap
@@ -334,7 +334,7 @@ for (q in levels(df_clean$ps_stratum)) {
 }
 ```
 
-### Compute ATE
+## Compute ATE
 
 
 $$
@@ -387,9 +387,10 @@ for (k in levels(df_clean$ps_stratum)) {
 cat("Estimated ATE from propensity score strata:", round(ATE, 2), "\n")
 ```
 
-## Regression (unweighted)
+# Regression (unweighted)
 
 ```{r}
+# fit the model
 glm_fit_unweighted <- glm(
   Felt_sad_or_hopeless ~ Bullied_at_school + What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
     Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
@@ -407,6 +408,7 @@ summary(glm_fit_unweighted)
 
 
 ```{r}
+# get predicted values
 prob_unweight <- predict(glm_fit_unweighted, type = "response")
 roc_obj_unweight <- roc(df_clean$Felt_sad_or_hopeless, prob_unweight)
 plot(roc_obj_unweight)
@@ -416,6 +418,8 @@ auc(roc_obj_unweight)
 
 
 ```{r}
+# bin each observations based on predicted probabilities
+
 binned_unweight_df <- df_clean %>%
   mutate(
     predprob_unweight = predict(glm_fit_unweighted, type = "response"),  # predicted probabilities for unweighted
@@ -444,4 +448,14 @@ ggplot(binned_unweight_df, aes(x = avgpred, y = obs_prop)) +
        title = "Calibration Plot (Observed vs Predicted)") +
   theme_minimal()
 ```
+
+```{r}
+
+# calculates the margin effect over our data set for the bullied at school coefficient
+library(margins)
+mfx <- margins(glm_fit_unweighted, variables = "Bullied_at_school")
+summary(mfx)
+
+```
+
 
