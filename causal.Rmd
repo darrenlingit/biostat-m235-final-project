@@ -1,0 +1,230 @@
+---
+title: "M235 Causal Inference"
+subtitle: Final Project
+date: today
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    # fig.width: 6
+    # fig.height: 4
+    message: FALSE
+    cache: false
+---
+
+## Loading in data
+
+```{r}
+library(tidyverse)
+library(VIM)
+library(asciiSetupReader)
+```
+
+```{r}
+library(tidyverse)
+library(asciiSetupReader)
+
+# Loading in Data
+df <- read_ascii_setup(
+  "XXH2023_YRBS_Data.dat",     
+  "2023XXH-SPSS.sps",         
+  use_value_labels = TRUE,
+  use_clean_names = TRUE,
+  select_columns = NULL,
+  coerce_numeric = TRUE
+)
+# colnames(df)
+# names(df)[sapply(df, is.numeric)]
+```
+
+Response variable: `Felt_sad_or_hopeless` (almost every day for >=2 weeks in a row so that they stopped doing some usual activities, during the 12 months before the survey): 1 = Yes, 2 = No.  
+
+```{r}
+table(df$Felt_sad_or_hopeless)
+```
+
+Main treatment: `Bullied_at_school`
+
+```{r}
+table(df$Bullied_at_school)
+```
+
+Other covariates: 
+
+```{r}
+table(df$Hours_of_sleep_on_school_night)
+```
+
+1. Demographics
+- Sex (`What_is_your_sex`)
+- Age (`How_old_are_you`)
+- Race (`What_is_your_race`)
+- Sexual identity (`Sexual_identity`)
+
+2. Family and Social Environment
+- Violence in neighborhood (`Saw_physical_violence_in_neighborhood`)
+- Unstable housing (`Experienced_unstable_housing`)
+- Family environment (`Ever_lived_w_parent_guardian_w_substance_abuse_ACE`)
+- Physical abuse (`Ever_parental_physical_abuse_ACEs`)
+
+3. Substance use
+- `Current_marijuana_use`
+
+4. Health behaviors
+- Breakfast eating (`Did_not_eat_breakfast`)
+- Physical exercise (`did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days`)
+- Sleep (`Hours_of_sleep_on_school_night`)
+
+## Subsetting and Cleaning
+
+```{r}
+# list of variables to keep
+kept_vars <- c(
+  # Response and treatment
+  "Felt_sad_or_hopeless",
+  "Bullied_at_school",
+  
+  # Survey weights
+  "Overall_Analysis_Weight",
+  
+  # Demographics
+  "What_is_your_sex",
+  "How_old_are_you",
+  "What_is_your_race",
+  "Sexual_identity",
+  
+  # Family and social environment
+  "Saw_physical_violence_in_neighborhood",
+  "Experienced_unstable_housing",
+  "Ever_lived_w_parent_guardian_w_substance_abuse_ACE",
+  "Ever_parental_physical_abuse_ACEs",
+  
+  # Substance use
+  "Current_marijuana_use",
+  
+  # Health behaviors
+  "Did_not_eat_breakfast",
+  "did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days",
+  "Hours_of_sleep_on_school_night"
+)
+
+# subset the dataset
+df_sub <- df[, kept_vars]
+
+# inspect missing values
+aggr(df_sub, numbers = TRUE, sortVars = TRUE, 
+     labels = names(df_sub), cex.axis = 0.7, gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
+matrixplot(df_sub)
+
+# missing values are dropped
+df_clean <- na.omit(df_sub)
+# change variable type
+df_clean$Felt_sad_or_hopeless <- ifelse(df_clean$Felt_sad_or_hopeless == 2, 0, 1)
+#df_clean$Bullied_at_school <- factor(ifelse(df_clean$Bullied_at_school=="No", 0, 1))
+#df_clean$What_is_your_sex <- factor(ifelse(df_clean$What_is_your_sex=="Male", 0, 1))
+df_clean$How_old_are_you <- recode(df_clean$How_old_are_you,
+  "12 years old or younger" = 12,
+  "13 years old" = 13,
+  "14 years old" = 14,
+  "15 years old" = 15,
+  "16 years old" = 16,
+  "17 years old" = 17,
+  "18 years old or older" = 18
+)
+df_clean$is_white <- factor(ifelse(grepl("^E$", df_clean$What_is_your_race), 1, 0))
+df_clean$is_LGBTQ <- factor(ifelse(df_clean$Sexual_identity == "Heterosexual (straight)", 0, 1))
+#df_clean$Saw_physical_violence_in_neighborhood <- factor(ifelse(df_clean$Saw_physical_violence_in_neighborhood == "No", 0, 1))
+#df_clean$Experienced_unstable_housing <- factor(ifelse(df_clean$Experienced_unstable_housing == 2, 0, 1))
+#df_clean$Ever_lived_w_parent_guardian_w_substance_abuse_ACE <- factor(ifelse(df_clean$Ever_lived_w_parent_guardian_w_substance_abuse_ACE == "No", 0, 1))
+df_clean$Ever_parental_physical_abuse_ACEs <- factor(ifelse(df_clean$Ever_parental_physical_abuse_ACEs == "Never", 0, 1))
+df_clean$Current_marijuana_use <- factor(ifelse(df_clean$Current_marijuana_use == "0 times", 0, 1))
+#df_clean$Did_not_eat_breakfast <- factor(df_clean$Did_not_eat_breakfast)
+#df_clean$did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days <- factor(df_clean$did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days)
+df_clean$Hours_of_sleep_on_school_night <- as.numeric(substring(df_clean$Hours_of_sleep_on_school_night, 1, 2))
+df_clean
+```
+
+## Survey-weighted unadjusted average difference
+
+```{r}
+#install.packages("survey")
+library(survey)
+
+# create a survey design object
+  design <- svydesign(
+  ids = ~1,
+  data = df_clean,
+  weights = ~Overall_Analysis_Weight
+)
+
+# compute weighted means for each "treatment" group
+mean_by_treatment <- svyby(
+  ~Felt_sad_or_hopeless,
+  ~Bullied_at_school,
+  design,
+  svymean,
+  na.rm = TRUE
+)
+
+print(mean_by_treatment)
+
+# calculate the weighted difference (ATE estimate)
+ate <- diff(mean_by_treatment$Felt_sad_or_hopeless)
+cat("Estimated ATE (difference in weighted means) of bullying:", round(ate, 2), "\n")
+
+```
+
+## Regression (weighted)
+
+```{r}
+# logistic regression
+glm_fit <- glm(
+  Felt_sad_or_hopeless ~ Bullied_at_school + What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
+    factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
+    Hours_of_sleep_on_school_night
+    ,
+  data = df_clean,
+  family = binomial(),
+  weights = Overall_Analysis_Weight
+)
+
+summary(glm_fit)
+
+```
+
+## Propensity Score Analysis (weighted)
+
+## Regression (unweighted)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
