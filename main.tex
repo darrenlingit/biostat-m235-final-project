@@ -111,13 +111,13 @@ Overall, in many fields, randomized controlled trials are often infeasible for e
 
 The Youth Risk Behavior Surveillance System (YRBSS), developed by the Centers for Disease Control and Prevention (CDC), is a national complex survey design that monitors health-related behaviors among U.S. high school students. These behaviors include substance use, dietary habits, physical activity, and mental health indicators. The dataset has spurred interest in identifying environmental and social risk factors in adolescence mental healths. 
 
-In fact, in the most recent report of CDC's Morbidity and Mortality Weekly Report found that students who reported being bullied at school had significantly higher rates of persistent sadness or hopelessness compared to those who were not bullied, even after adjusting for demographics and other behaviors. However, to our knowledge, all analysis were derived from logistic regression models and Chi-square tests. Therefore, we extend propensity score methods to this context by incorporating the survey design and weights--providing a causal estimate between bullying and adolescent mental health.
+In fact, in the most recent report of CDC's Morbidity and Mortality Weekly Report found that students who reported being bullied at school had significantly higher rates of persistent sadness or hopelessness compared to those who were not bullied, even after adjusting for demographics and other behaviors \cite{cdc_mmwrr_2024}. However, to our knowledge, all analysis were derived from logistic regression models and Chi-square tests. Therefore, we extend propensity score methods to this context by incorporating the survey design and weights--providing a causal estimate between bullying and adolescent mental health.
 
 Furthermore, our model will use a binary outcome instead of a continuous outcome used in Zanutto's paper.
 
 \subsection{Method}
 
-The 2023 YRBSS dataset used here contains individual-level responses with 20,103 observations and 250 columns, which includes mostly binary and ordinal variables. Sampling weights are provided to account for survey design, nonresponse, and post-stratification adjustments [CITE].
+The 2023 YRBSS dataset used here contains individual-level responses with 20,103 observations and 250 columns, which includes mostly binary and ordinal variables. Sampling weights are provided to account for survey design, nonresponse, and post-stratification adjustments \cite{cdc_mmwrr_2024}.
 
 Our primary outcome variable is persistent feelings of sadness or hopelessness ("During the past 12 months, did you ever feel so sad or hopeless almost every day for two weeks or more in a row that you stopped doing some usual activities?"). Our treatment variable is the binary indicator of being bullied at school ("During the past 12 months, have you ever been bullied on school property?"). Because of this, our effect of interest is the risk difference of hopelessness between those who were bullied and those who were not. Note for our analysis electronic bullying is not included in this treatment.
 
@@ -133,11 +133,13 @@ The propensity score model will follow the same set up as described in Section \
 
 \subsection{Results}
 
-Our results show that there is a difference in the estimates between each method.
+Our results show that there is a difference in the estimates between each method. We see that our estimates vary slightly between weighted vs. unweighted methods, but vary much more between 
+
+\input{summary_results_table.tex}
 
 \subsection{Discussion}
 
-\input{summary_results_table.tex}
+
 
 \bibliographystyle{plain}  % or "apalike", "ieeetr", "acm", etc.
 \bibliography{references}
