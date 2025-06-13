@@ -15,13 +15,13 @@ engine: knitr
 knitr:
   opts_chunk: 
     fig.align: 'center'
-    message: FALSE
+    message: false
     cache: false
 ---
 
 # Loading in data
 
-```{r message = false}
+```{r}
 library(tidyverse)
 library(VIM)
 library(asciiSetupReader)
@@ -339,16 +339,16 @@ covariates <- c("What_is_your_sex", "How_old_are_you", "is_white", "is_LGBTQ",
                 "Hours_of_sleep_on_school_night")
 
 # Create table stratified by treatment group, within strata
-for (q in levels(df_clean$ps_stratum)) {
-  cat("\n\n==============================\n")
-  cat("Balance in Stratum", q, "\n")
-  cat("==============================\n")
-  
-  stratified_data <- df_clean[df_clean$ps_stratum == q, ]
-  
-  tab <- CreateTableOne(vars = covariates, strata = "Bullied_at_school", data = stratified_data, factorVars = covariates)
-  print(tab, smd = TRUE)
-}
+# for (q in levels(df_clean$ps_stratum)) {
+#   cat("\n\n==============================\n")
+#   cat("Balance in Stratum", q, "\n")
+#   cat("==============================\n")
+#   
+#   stratified_data <- df_clean[df_clean$ps_stratum == q, ]
+#   
+#   tab <- CreateTableOne(vars = covariates, strata = "Bullied_at_school", data = stratified_data, factorVars = covariates)
+#   print(tab, smd = TRUE)
+# }
 ```
 
 ## Compute ATE
@@ -417,6 +417,8 @@ for (k in levels(df_clean$ps_stratum)) {
   var_k <- omega_k^2 * (s2_0k / n0k + s2_1k / n1k)
   var_prop_weighted <- var_prop_weighted + var_k
 }
+
+ate_prop_weighted <- ATE
 
 se_prop_weighted <- sqrt(var_prop_weighted)
 
@@ -557,6 +559,7 @@ summary_results <- data.frame(method = c("weighted_mean", "regression_weighted",
 
 summary_results
 ```
+
 ```{r}
 library(xtable)
 
