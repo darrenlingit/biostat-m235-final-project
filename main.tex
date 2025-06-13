@@ -99,11 +99,32 @@ In observational studies, MLR is a common method for estimating treatment effect
 
 Propensity score methods primarily estimate ATE and may miss important interactions. For example, the gender salary gap may vary by region or experience, which a single average cannot capture. In contrast, linear regression can directly model such interactions. Additionally, omitted confounders or post-treatment variables can bias results. For instance, including job rank—potentially influenced by gender bias—may understate true differences. These concerns, however, apply to both MLR and propensity score methods.
 
-\section{Final Comments} \label{sec:finalcomments}
+\section{Comments} \label{sec:finalcomments}
 
 The paper finds agreement between MLR and propensity score methods on the outcome of gender salary gaps. However, both methods rely on the assumption that all relevant confounders are observed and controlled. As discussed in Section \ref{subsec:limitations}, important covariates can be omitted. In the context of the paper, the exclusion of covariates like workplace culture or discrimination, can yield biased estimates for both. In practice, it would likely be beneficial to complement these methods with sensitivity analysis to understand the effects of these variables. Furthermore, future work could explore extending methods such as doubly robust estimators for complex survey design. It is of note, however, the likely reason that both methods agree is due to good overlap in covariate balance. Thus, furthermore, a good addition to the paper would be understanding the difference in methodology under the context of poor covariate balances. 
 
 Overall, in many fields, randomized controlled trials are often infeasible for estimating treatment effects. Researchers therefore rely on observational data, which frequently come from complex surveys. However, such data frequently come from complex survey designs, where the use of survey weights is essential for producing valid population-level inferences. In such cases, survey weights are essential for valid population-level inferences—particularly in public health, where large-scale surveys are common. This paper presents a proof-of-concept for applying propensity score methods with survey weights in these contexts.
+
+\section{Extension}
+
+\subsection{Motivation}
+
+The Youth Risk Behavior Surveillance System (YRBSS), developed by the Centers for Disease Control and Prevention (CDC), is a national complex survey design that monitors health-related behaviors among U.S. high school students. These behaviors include substance use, dietary habits, physical activity, and mental health indicators. The dataset has spurred interest in identifying environmental and social risk factors in adolescence mental healths. 
+
+In fact, in the most recent report of CDC's Morbidity and Mortality Weekly Report found that students who reported being bullied at school had significantly higher rates of persistent sadness or hopelessness compared to those who were not bullied, even after adjusting for demographics and other behaviors. However, to our knowledge, all analysis were derived from logistic regression models and Chi-square tests. Therefore, we extend propensity score methods to this context by incorporating the survey design and weights--providing a causal estimate between bullying and adolescent mental health.
+
+\subsection{Methods}
+
+\subsection{Results}
+
+\subsection{Discussion}
+
+The dataset used here contains individual-level responses to these survey items, along with survey weights (Overall\_Analysis\_Weight) that account for the complex survey design. The original dataset has 20,103 observations and 250 columns, which includes mostly binary and ordinal variables and is particularly well-suited for studying health issues that affect adolescents.
+
+
+To extend the findings of the original gender-salary paper, a parallel analysis was conducted using this data to investigate whether similar methodological conclusions hold when the outcome is binary and logistic regression replaces multiple linear regression. Specifically, the extension examines the causal effect of being bullied at school (binary treatment variable) on whether a student felt sad or hopeless almost every day for more than two weeks so that it impacted usual activities in the past year (binary outcome). This mirrors the original study’s framework, which estimated the effect of gender on salary using both multiple linear regression and propensity score analysis, while accounting for complex survey design through survey weights.
+
+Prior to analysis, a data cleaning process was conducted to prepare the dataset. Given the extensive scope of the YRBSS dataset, a subset of covariates was selected for this analysis. The selection process was guided by conceptual relevance to both the treatment (bullying) and the outcome (feeling sad or hopeless), and the covariates were chosen to represent distinct dimensions, including demographics (e.g., sex, age, race), social and family environment (e.g., unstable housing, neighborhood violence, parental substance use, and physical abuse), substance use (marijuana use), and health-related behaviors (sleep, physical activity, and breakfast consumption). This strategy parallels the original paper, which incorporated a modest number of conceptually meaningful covariates that represent several dimensions rather than an exhaustive list. In addition, some multiple-response categorical variables were recoded into binary indicators. For example, the race variable—originally a multiple-choice response—was transformed into a binary variable indicating whether a student identified as White versus non-White. Similarly, ordinal variables such as age were recoded into numerically ordered values. Some responses, such as hours of sleep reported as strings (e.g., "6 hours"), were cleaned by stripping non-numeric characters. Missing data were handled by subsetting to complete cases on the selected variables to ensure valid input for both regression and propensity score modeling.
 
 \bibliographystyle{plain}  % or "apalike", "ieeetr", "acm", etc.
 \bibliography{references}
