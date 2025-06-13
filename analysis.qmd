@@ -190,7 +190,7 @@ cat("Estimated ATE (difference in weighted means) of bullying:", round(ate_weigh
 # logistic regression
 glm_fit <- glm(
   Felt_sad_or_hopeless ~ Bullied_at_school * (What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
-    Sateaw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
+    Saw_physical_violence_in_neighborhood + Experienced_unstable_housing + 
     Ever_lived_w_parent_guardian_w_substance_abuse_ACE + Ever_parental_physical_abuse_ACEs + Current_marijuana_use +
     factor(Did_not_eat_breakfast) + did_exercises_to_strengthen_or_tone_their_muscles_on_three_or_more_days + 
     Hours_of_sleep_on_school_night),
@@ -213,9 +213,14 @@ reduced <- glm(
 
 # test all interaction
 anova(reduced, glm_fit, test = "Chi")
+```
+
+```{r}
 # test interaction terms
 (drop1_results <- suppressWarnings(drop1(glm_fit, test = "Chi")))
+```
 
+```{r}
 # add the significant interaction terms
 glm_fit <- glm(
   Felt_sad_or_hopeless ~ Bullied_at_school + What_is_your_sex + How_old_are_you + is_white + is_LGBTQ +
@@ -239,7 +244,9 @@ prob <- predict(glm_fit, type = "response")
 roc_obj <- roc(df_clean$Felt_sad_or_hopeless, prob)
 plot(roc_obj)
 auc(roc_obj)
+```
 
+```{r}
 # Hosmer-Lemeshow
 binned_df <- df_clean %>%
   mutate(
@@ -278,6 +285,7 @@ library(margins)
 mfx_weighted <- margins(glm_fit, variables = "Bullied_at_school")
 ame_weighted <- summary(mfx_weighted)$AME
 summary(mfx_weighted)
+se_reg_weighted <- summary(mfx_weighted)$SE
 ```
 
 # Propensity Score Analysis (weighted)
@@ -355,7 +363,25 @@ $$
 $$
 
 ```{r}
+# zanutto_var computes the sample variance as defined in Zanutto 2006
+zanutto_var <- function(weights, outcomes) {
+  n <- length(outcomes)
+  if (n <= 1) return(0)
+  
+  weight_sum <- sum(weights)
+  weight_norm <- weights / weight_sum
+  y_bar <- sum(weights * outcomes) / weight_sum
+  
+  # Compute z_i = omega_i * (y_i - y_bar)
+  z <- weight_norm * (outcomes - y_bar)
+  z_bar <- mean(z)
+  
+  s2 <- (n / (n - 1)) * sum((z - z_bar)^2)
+  return(s2)
+}
+```
 
+```{r}
 K <- length(levels(df_clean$ps_stratum))
 
 # get the denominator for weights of control units 
@@ -364,37 +390,38 @@ total_weight_control <- sum(df_clean$Overall_Analysis_Weight[df_clean$Bullied_at
 # initialize ATE accumulator
 ATE <- 0
 
+var_prop_weighted <- 0
+
 for (k in levels(df_clean$ps_stratum)) {
-  # subset data for stratum k
   data_k <- df_clean[df_clean$ps_stratum == k, ]
-  
-  # control units in stratum k
   control_k <- data_k[data_k$Bullied_at_school == 0, ]
-  # treated units in stratum k
   treated_k <- data_k[data_k$Bullied_at_school == 1, ]
   
-  # sum weights for control in stratum k
-  sum_w_control_k <- sum(control_k$Overall_Analysis_Weight)
-  # sum weights for treated in stratum k
-  sum_w_treated_k <- sum(treated_k$Overall_Analysis_Weight)
+  n0k <- nrow(control_k)
+  n1k <- nrow(treated_k)
+  sum_w0k <- sum(control_k$Overall_Analysis_Weight)
+  sum_w1k <- sum(treated_k$Overall_Analysis_Weight)
   
-  # weighted average outcome in treated group of stratum k
-  weighted_outcome_treated_k <- sum(treated_k$Overall_Analysis_Weight * treated_k$Felt_sad_or_hopeless) / sum_w_treated_k
-  # Weighted average outcome in control group of stratum k
-  weighted_outcome_control_k <- sum(control_k$Overall_Analysis_Weight * control_k$Felt_sad_or_hopeless) / sum_w_control_k
+  p0k <- sum(control_k$Overall_Analysis_Weight * control_k$Felt_sad_or_hopeless) / sum_w0k
+  p1k <- sum(treated_k$Overall_Analysis_Weight * treated_k$Felt_sad_or_hopeless) / sum_w1k
   
-  # Weight factor for this stratum
-  weight_factor_k <- sum_w_control_k / total_weight_control
+  omega_k <- sum_w0k / total_weight_control
   
-  # Increment ATE
-  ATE <- ATE + weight_factor_k * (weighted_outcome_treated_k - weighted_outcome_control_k)
+  # Update ATE
+  ATE <- ATE + omega_k * (p1k - p0k)
+  
+  # Zanutto-style variance using weighted residuals
+  s2_0k <- zanutto_var(control_k$Overall_Analysis_Weight, control_k$Felt_sad_or_hopeless)
+  s2_1k <- zanutto_var(treated_k$Overall_Analysis_Weight, treated_k$Felt_sad_or_hopeless)
+  
+  var_k <- omega_k^2 * (s2_0k / n0k + s2_1k / n1k)
+  var_prop_weighted <- var_prop_weighted + var_k
 }
 
-ate_prop_weighted <- ATE
+se_prop_weighted <- sqrt(var_prop_weighted)
 
-cat("Estimated ATE from propensity score strata:", round(ate_prop_weighted, 2), "\n")
-
-
+cat("Estimated ATE (weighted):", round(ATE, 3), "\n")
+cat("Standard Error (Zanutto):", round(se_prop_weighted, 4), "\n")
 ```
 
 # Regression (unweighted)
@@ -465,6 +492,57 @@ library(margins)
 mfx_unweighted <- margins(glm_fit_unweighted, variables = "Bullied_at_school")
 ame_unweighted <- as.numeric(summary(mfx_unweighted)["AME"])
 summary(mfx_unweighted)
+se_reg_unweighted <- summary(mfx_unweighted)$SE
+```
+
+# Propensity Score Analysis (Unweighted)
+
+```{r}
+K <- length(levels(df_clean$ps_stratum))
+
+# get the denominator for control units 
+total_control <- sum(df_clean$Bullied_at_school == 0)
+
+# initialize ATE accumulator
+ATE_prop_unweighted <- 0
+sample_var_prop_unweighted <- 0
+
+for (k in levels(df_clean$ps_stratum)) {
+  # subset data for stratum k
+  data_k <- df_clean[df_clean$ps_stratum == k, ]
+  
+  # control units in stratum k
+  control_k <- data_k[data_k$Bullied_at_school == 0, ]
+  # treated units in stratum k
+  treated_k <- data_k[data_k$Bullied_at_school == 1, ]
+  
+  # Mean outcome in treated group of stratum k
+  mean_outcome_treated_k <- mean(treated_k$Felt_sad_or_hopeless, na.rm = TRUE)
+  # Mean outcome in control group of stratum k
+  mean_outcome_control_k <- mean(control_k$Felt_sad_or_hopeless, na.rm = TRUE)
+  
+  # Var outcome in treated group of stratum k
+  var_outcome_treated_k <- var(treated_k$Felt_sad_or_hopeless, na.rm = TRUE)
+  # Var outcome in control group of stratum k
+  var_outcome_control_k <- var(control_k$Felt_sad_or_hopeless, na.rm = TRUE)
+  
+  # Calculating the weighted average
+  n_control_k <- nrow(control_k)
+  n_treated_k <- nrow(treated_k)
+  omega_k <- n_control_k / total_control
+  
+  # calculating the ATE sequentially
+  ATE_prop_unweighted <- ATE_prop_unweighted + omega_k * (mean_outcome_treated_k - mean_outcome_control_k)
+  
+  # calculating the SE sequentially
+  sample_var_prop_unweighted <- sample_var_prop_unweighted + omega_k^2 * (var_outcome_control_k/n_control_k) + (var_outcome_treated_k/n_treated_k)
+}
+
+se_prop_unweighted <- sqrt(sample_var_prop_unweighted)
+
+cat("Estimated ATE from propensity score strata:", round(ATE_prop_unweighted, 3), "\n")
+cat("Estimated SE:", round(se_prop_unweighted, 3), "\n")
+
 ```
 
 
@@ -472,9 +550,19 @@ summary(mfx_unweighted)
 
 
 ```{r}
-summary_results <- data.frame(method = c("weighted_mean", "regression_weighted", "prop_weighted", "regression_unweighted"),
-           estimate = c(ate_weighted_mean, as.numeric(ame_weighted), ate_prop_weighted, as.numeric(ame_unweighted)))
+summary_results <- data.frame(method = c("weighted_mean", "regression_weighted", "prop_weighted", "regression_unweighted", "prop_unweighted"),
+           estimate = c(ate_weighted_mean, as.numeric(ame_weighted), ate_prop_weighted, 
+                        as.numeric(ame_unweighted), ATE_prop_unweighted),
+          se = c("NA", round(se_reg_weighted, 5) , round(se_prop_weighted, 5) ,  round(se_reg_unweighted, 5) , round(se_prop_unweighted, 5)))
 
 summary_results
 ```
+```{r}
+library(xtable)
 
+# Create LaTeX table
+latex_table <- xtable(summary_results, digits = c(0, 0, 3, 5))
+
+# Print to .tex file
+print(latex_table, file = "summary_results_table.tex")
+```
