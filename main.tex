@@ -113,18 +113,31 @@ The Youth Risk Behavior Surveillance System (YRBSS), developed by the Centers fo
 
 In fact, in the most recent report of CDC's Morbidity and Mortality Weekly Report found that students who reported being bullied at school had significantly higher rates of persistent sadness or hopelessness compared to those who were not bullied, even after adjusting for demographics and other behaviors. However, to our knowledge, all analysis were derived from logistic regression models and Chi-square tests. Therefore, we extend propensity score methods to this context by incorporating the survey design and weights--providing a causal estimate between bullying and adolescent mental health.
 
-\subsection{Methods}
+Furthermore, our model will use a binary outcome instead of a continuous outcome used in Zanutto's paper.
+
+\subsection{Method}
+
+The 2023 YRBSS dataset used here contains individual-level responses with 20,103 observations and 250 columns, which includes mostly binary and ordinal variables. Sampling weights are provided to account for survey design, nonresponse, and post-stratification adjustments [CITE].
+
+Our primary outcome variable is persistent feelings of sadness or hopelessness ("During the past 12 months, did you ever feel so sad or hopeless almost every day for two weeks or more in a row that you stopped doing some usual activities?"). Our treatment variable is the binary indicator of being bullied at school ("During the past 12 months, have you ever been bullied on school property?"). Because of this, our effect of interest is the risk difference of hopelessness between those who were bullied and those who were not. Note for our analysis electronic bullying is not included in this treatment.
+
+Aligning with existing variable selection, we include separate covariates to control for confounding effects. Those variables will be separated into three broad areas: demographic variables, social environment variables, and health behaviors (see Github for detailed variable breakdown).
+
+Prior to analysis, a data cleaning process was conducted to prepare the dataset. In addition, some multiple-response categorical variables were recoded into binary indicators. For example, the race variable—originally a multiple-choice response—was transformed into a binary variable indicating whether a student identified as white versus non-white.
+
+Similar to Zanutto's paper, we run four models: unweighted and survey-weighted regression and propensity score models. Additionally, we calculated the weighted mean difference to use as a reference. However, given our outcome variable is binary, we run will run a logistic regression model instead of MLR. The model is then of the form $\log(\frac{p_i}{1-p_i}) = \beta_0 + \beta_1I(treatment = 1) + \beta_2X + ... + \beta_kX_k$ where $\beta_1$ is the treatment effect. 
+
+For our regression models, we regressed our outcome (feeling sad or hopeless) on our treatment - bullying - and various covariates of interest that we determined to be significantly associated with feelings of hopelessness. We fit both a weighted and unweighted regression model. Because the coefficient for our treatment does not directly translate to a difference in our outcome risk, we calculated the difference in marginal risks under the treatment and control to find the ATE.
+
+The propensity score model will follow the same set up as described in Section \ref{sec:setup}. However, now the ATE (Eq. \ref{eq:ate_weights}) represents as population-level risk differences.
 
 \subsection{Results}
 
+Our results show that there is a difference in the estimates between each method.
+
 \subsection{Discussion}
 
-The dataset used here contains individual-level responses to these survey items, along with survey weights (Overall\_Analysis\_Weight) that account for the complex survey design. The original dataset has 20,103 observations and 250 columns, which includes mostly binary and ordinal variables and is particularly well-suited for studying health issues that affect adolescents.
-
-
-To extend the findings of the original gender-salary paper, a parallel analysis was conducted using this data to investigate whether similar methodological conclusions hold when the outcome is binary and logistic regression replaces multiple linear regression. Specifically, the extension examines the causal effect of being bullied at school (binary treatment variable) on whether a student felt sad or hopeless almost every day for more than two weeks so that it impacted usual activities in the past year (binary outcome). This mirrors the original study’s framework, which estimated the effect of gender on salary using both multiple linear regression and propensity score analysis, while accounting for complex survey design through survey weights.
-
-Prior to analysis, a data cleaning process was conducted to prepare the dataset. Given the extensive scope of the YRBSS dataset, a subset of covariates was selected for this analysis. The selection process was guided by conceptual relevance to both the treatment (bullying) and the outcome (feeling sad or hopeless), and the covariates were chosen to represent distinct dimensions, including demographics (e.g., sex, age, race), social and family environment (e.g., unstable housing, neighborhood violence, parental substance use, and physical abuse), substance use (marijuana use), and health-related behaviors (sleep, physical activity, and breakfast consumption). This strategy parallels the original paper, which incorporated a modest number of conceptually meaningful covariates that represent several dimensions rather than an exhaustive list. In addition, some multiple-response categorical variables were recoded into binary indicators. For example, the race variable—originally a multiple-choice response—was transformed into a binary variable indicating whether a student identified as White versus non-White. Similarly, ordinal variables such as age were recoded into numerically ordered values. Some responses, such as hours of sleep reported as strings (e.g., "6 hours"), were cleaned by stripping non-numeric characters. Missing data were handled by subsetting to complete cases on the selected variables to ensure valid input for both regression and propensity score modeling.
+\input{summary_results_table.tex}
 
 \bibliographystyle{plain}  % or "apalike", "ieeetr", "acm", etc.
 \bibliography{references}
