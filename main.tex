@@ -27,7 +27,7 @@
 
 In the paper “A Comparison of Propensity Score and Linear Regression Analysis of Complex Survey Data” by Elaine L. Zanutto, the author compares the use of propensity score analysis and multiple linear regression (MLR), with and without weights \cite{zanutto_2022}. Both of these analysis methods require the use of survey weights when using complex survey data. Survey weights represent the number of individuals in a population that a single subpopulation in a survey represents. Since the covariates used in the naive modeling do not account for survey weights, there may be model misspecification, and the treatment effects may be biased.
 
-In the paper, Zannuto aims to compare these different modeling methods by applying them to the 1997 SESTAT database. The primary goal of her analysis is to understand the wage difference in men and women in different occupations in the field of computer science and to understand the advantages and disadvantages of each method.
+In the paper, Zanutto aims to compare these different modeling methods by applying them to the 1997 SESTAT database. The primary goal of her analysis is to understand the wage difference in men and women in different occupations in the field of computer science and to understand the advantages and disadvantages of each method.
 
 
 \section{Set Up} \label{sec:setup}
@@ -161,7 +161,10 @@ Possible limitations can be that the treatment effect could have been explained 
 
 \section{Acknowledgments}
 
-Peike Li wrote Methodology \& Main Analysis (Sec. \ref{sec:meth_analysis}) and Extension: Method (Sec. \ref{subsec:ExtMethod}). She also did coding for the Extension: Data Cleaning, Weighted Models. Darren Lin wrote Introduction (Sec. \ref{sec:intro}), Setup (Sec. \ref{sec:setup}), and Extension: Results (Sec. \ref{subex:ExtResults}). He further coded for the Extension: sourcing the data, Unweighted models, ATE calculations for regression model, and code cleaning. Timothy Shen wrote Discussion (Sec. \ref{sec:discussion}), Comments (Sec. \ref{sec:finalcomments}), Extensions: Introduction (Sec. \ref{subsec:ExtMotivation}), Methods (Sec. \ref{subsec:ExtMethod}), and Discussion (Sec. \ref{subsec:ExtDiscuss}).  He also did coding for the Extension: ATE calculations for propensity score models. 
+Peike Li wrote Methodology \& Main Analysis (Sec. \ref{sec:meth_analysis}) and Extension: Method (Sec. \ref{subsec:ExtMethod}). She also did coding for the Extension: Data Cleaning, Weighted Models. Darren Lin wrote Introduction (Sec. \ref{sec:intro}), Setup (Sec. \ref{sec:setup}), and Extension: Results (Sec. \ref{subex:ExtResults}). He further coded for the Extension: sourcing the data, Unweighted models, ATE calculations for regression model, and code cleaning. Timothy Shen wrote Discussion (Sec. \ref{sec:discussion}), Comments (Sec. \ref{sec:finalcomments}), Extensions: Introduction (Sec. \ref{subsec:ExtMotivation}), Methods (Sec. \ref{subsec:ExtMethod}), and Discussion (Sec. \ref{subsec:ExtDiscuss}), and final edits.  He also did coding for the Extension: ATE calculations for propensity score models. 
+
+Our code can be found here: \href{https://github.com/darrenlingit/biostat-m235-final-project}{Github Repo}.
+
 
 \bibliographystyle{plain}  % or "apalike", "ieeetr", "acm", etc.
 \bibliography{references}
