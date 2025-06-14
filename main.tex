@@ -23,18 +23,20 @@
 
 \newpage
 
-\section{Introduction} \label{sec:intro}
+\section{Paper Explanation}
+
+\subsection{Introduction} \label{subsec:intro}
 
 In the paper “A Comparison of Propensity Score and Linear Regression Analysis of Complex Survey Data” by Elaine L. Zanutto, the author compares the use of propensity score analysis and multiple linear regression (MLR), with and without weights \cite{zanutto_2022}. Both of these analysis methods require the use of survey weights when using complex survey data. Survey weights represent the number of individuals in a population that a single subpopulation in a survey represents. Since the covariates used in the naive modeling do not account for survey weights, there may be model misspecification, and the treatment effects may be biased.
 
 In the paper, Zanutto aims to compare these different modeling methods by applying them to the 1997 SESTAT database. The primary goal of her analysis is to understand the wage difference in men and women in different occupations in the field of computer science and to understand the advantages and disadvantages of each method.
 
 
-\section{Set Up} \label{sec:setup}
+\subsection{Set Up} \label{subsec:setup}
 
 In a MLR model, the treatment effect can be estimated from the coefficient of the treatment assignment variable (often an indicator function). The model is usually in the form $Y_i = \beta_0 + \beta_1 I(treatment = 1) + \beta_2 X_2 + ... + \beta_k X_k$ where $\beta_1$ is the treatment effect.
 
-In a propensity score model, the treatment propensity score model is in the form of $e(X) = \mathbb{P}(T = 1 \mid X)$, which is calculated from the logistic regression model $\log\left( \frac{e(X)}{1 - e(X)} \right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$. Each unit is then divided into different strata based on their propensity scores. The average treatment effect (ATE) is calculated as $ \Delta_1 = \sum_{k=1}^K \frac{n_{0k}}{N_0}(\bar{y}_{1k} - \bar{y}_{0k})$ where $k$ is the stratum, $\bar{y}_{1k}$ and $\bar{y}_{0k}$ are the mean outcome values of the treatment and control groups respectively, $n_{1k}$ is the number of treated units, and $N_1$ is the total number of treated units. The standard error is given by $\hat{s}(\Delta_1) = \sqrt{\sum_{k=1}^K \frac{n_{0k}^2}{N_0^2} (\frac{s^2_{1k}}{n_{1k}} + \frac{s^2_{0k}}{n_{0k}})}$. If there are still differences in covariate balance after propensity score modeling, the model can be reestimated using regression adjustments so that the ATE is $\Delta_2 = \sum_{k=1}^s \frac{n_{1k}}{N_1} \hat{\beta}_{k,male}$ 
+In a propensity score model, the treatment propensity score model is in the form of $e(X) = \mathbb{P}(T = 1 \mid X)$, which is calculated from the logistic regression model $\log\left( \frac{e(X)}{1 - e(X)} \right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$. Each unit is then divided into different strata based on their propensity scores. The average treatment effect (ATE) is calculated as $ \Delta_1 = \sum_{k=1}^K \frac{n_{0k}}{N_0}(\bar{y}_{1k} - \bar{y}_{0k})$ where $k$ is the stratum, $\bar{y}_{1k}$ and $\bar{y}_{0k}$ are the mean outcome values of the treatment and control groups respectively, $n_{1k}$ is the number of treated units, and $N_1$ is the total number of treated units. The standard error is given by $\hat{s}(\Delta_1) = \sqrt{\sum_{k=1}^K \frac{n_{0k}^2}{N_0^2} (\frac{s^2_{1k}}{n_{1k}} + \frac{s^2_{0k}}{n_{0k}})}$. If there are still differences in covariate balance after propensity score modeling, the model can be reestimated using regression adjustments so that the ATE is $\Delta_2 = \sum_{k=1}^s \frac{n_{1k}}{N_1} \hat{\beta}_{k,male}$.
 
 When using survey weights, the ATE becomes
 
@@ -60,7 +62,7 @@ where $w_i$ are the survey weights for unit $i$ and $S_{1k}$ and $S_{0k}$ are th
 
 
 
-\section{Methodology and Main Analysis} \label{sec:meth_analysis}
+\subsection{Methodology and Main Analysis} \label{subsec:meth_analysis}
 
 The paper evaluated these methods by estimating gender salary gaps across four IT occupations in the 1997 U.S. SESTAT survey, incorporating its survey weights. As a first step, the unadjusted gender gap was estimated by calculating difference of the weighted average salaries for men and women—showing women earned $7\%\text{--}12\%$ less than men across occupations. Then, to better isolate the gender effect, the authors accounted for potential confounding variables--including education and job-related covariates by running both MLR and propensity score methods.
 
@@ -72,34 +74,25 @@ Covariate balance was assessed using two-way ANOVAs for continuous variables and
 
 Lastly, comparisons of weighted vs. unweighted models revealed that ignoring survey design led to differing results. Unweighted estimates of the gender salary gap were larger for computer programmers and software engineers, but smaller for computer systems analysts and information systems scientists.
 
-\section{Discussion} \label{sec:discussion}
+\section{Paper Discussion} \label{sec:discussion}
 
 In observational studies, MLR is a common method for estimating treatment effects \cite{doi:https://doi.org/10.1002/0470090456.ch5}. However, propensity score methods, with their matched design, can reduce bias and confounding \cite{rosenbaum19834}. In fact, in the field of public policy and epidemiology, the propensity score methodology has become more common. Thus, the paper offers a meaningful comparison of methods to complex survey design data. Propensity score modeling with survey weights can provide meaningful advantages over the conventional MLR. However, certain limitations remain.
 
 \subsection{Advantages} \label{subsec:advantages}
 
-%\subsubsection{Population Level Estimate} \label{subsubsec:pop_lev_est}
-
-\textbf{Population Level Estimate}: Observational data from a complex survey design implies randomness is not achieved--making it difficult extrapolate for a population level estimate. Incorporating survey weights counteracts this. In fact, as discussed in Section \ref{sec:meth_analysis}, the weighted and unweighted analyses led to differing results. The difference was caused by the underrepresentation of the lower-paid men and women relative to the population, implying that the unweighted results did a poorer job reflecting the population.
-
-%\subsubsection{Unbiasedness} \label{subsubsec:unbias}
+\textbf{Population Level Estimate}: Observational data from a complex survey design implies randomness is not achieved--making it difficult extrapolate for a population level estimate. Incorporating survey weights counteracts this. In fact, as discussed in Section \ref{subsec:meth_analysis}, the weighted and unweighted analyses led to differing results. The difference was caused by the under-representation of the lower-paid men and women relative to the population, implying that the unweighted results did a poorer job reflecting the population.
 
 \textbf{Unbiasedness}: Given that propensity score analysis stratifies units by their estimated propensity scores, it serves as a balance score implying that the observed covariates is independent of the assignment mechanism. Thus, within strata, since it is homogeneous in the propensity score, the distributions of the covariates are the same between the treated and the control. When the strong ignorability assumption holds, differences in outcomes between treated and control units within strata provide unbiased estimates of the ATE.
 
-%\subsubsection{Robustness and Modeling Assumption} \label{subsubsec:robust}
-
 \textbf{Robustness in Modeling Assumption}: While propensity scores depend on model specification, the main goal is covariate balance, not modeling the outcome. Thus unlike linear regression, which assumes a functional form between covariates and outcome, propensity score methods are more robust to misspecification. Furthermore, if balance is not achieved, regression adjustments within strata can be used. However, since units in each stratum are more similar, these regression models are less sensitive to misspecification.
 
-
-%\subsubsection{Separation of the Modeling and Outcome Analysis} \label{subsubsec:sep}
-
-\textbf{Sepration of Model and Outcome Analysis}: Propensity score models are constructed to achieve balance, and thus does not involve the outcome data. Therefore, the analysis can be more objective since there is a complete separation between the modeling and the outcome.
+\textbf{Separation of Model and Outcome Analysis}: Propensity score models are constructed to achieve balance, and thus does not involve the outcome data. Therefore, the analysis can be more objective since there is a complete separation between the modeling and the outcome.
 
 \subsection{Limitations} \label{subsec:limitations}
 
 Propensity score methods primarily estimate ATE and may miss important interactions. For example, the gender salary gap may vary by region or experience, which a single average cannot capture. In contrast, linear regression can directly model such interactions. Additionally, omitted confounders or post-treatment variables can bias results. For instance, including job rank—potentially influenced by gender bias—may understate true differences. These concerns, however, apply to both MLR and propensity score methods.
 
-\section{Comments} \label{sec:finalcomments}
+\subsection{Comments} \label{subsec:finalcomments}
 
 The paper finds agreement between MLR and propensity score methods on the outcome of gender salary gaps. However, both methods rely on the assumption that all relevant confounders are observed and controlled. As discussed in Section \ref{subsec:limitations}, important covariates can be omitted. In the context of the paper, the exclusion of covariates like workplace culture or discrimination, can yield biased estimates for both. In practice, it would likely be beneficial to complement these methods with sensitivity analysis to understand the effects of these variables. Furthermore, future work could explore extending methods such as doubly robust estimators for complex survey design. It is of note, however, the likely reason that both methods agree is due to good overlap in covariate balance. Thus, furthermore, a good addition to the paper would be understanding the difference in methodology under the context of poor covariate balances. 
 
@@ -129,10 +122,10 @@ Similar to Zanutto's paper, we run four models: unweighted and survey-weighted r
 
 For our regression models, we regressed our outcome (feeling sad or hopeless) on our treatment -- bullying -- and various covariates of interest that we determined to be significantly associated with feelings of hopelessness. We fit both a weighted and unweighted regression model. Importantly, because our outcome is binary, the coefficient for our treatment variable does not directly translate to a difference in our outcome risk. To account for this, we calculated the difference in marginal risks under the treatment and control to find the ATE based on our given data by 
 
-The propensity score model will follow the same set up as described in Section \ref{sec:setup}. However, now the ATE (Eq. \ref{eq:ate_weights}) represents as population-level risk differences.
+The propensity score model will follow the same set up as described in Section \ref{subsec:setup}. However, now the ATE (Eq. \ref{eq:ate_weights}) represents as population-level risk differences.
 
 
-\subsection{Results} \label{subex:ExtResults}
+\subsection{Results} \label{subsec:ExtResults}
 
 Our results (shown below) demonstrate that there is a difference in the estimates between each method. We see that our estimates vary slightly between weighted vs. unweighted methods, but vary much more between different methods.
 
@@ -157,14 +150,17 @@ For the regression model, the incorporation of weighting led to negligible chang
 
 The relative consistent ATE between weighted and unweighted in both models indicate that the survey without weights likely already can approximate the population well under these covariates. However, the observed reduction in standard error for the weighted propensity score model indicates that weighting can improve precision.
 
-Possible limitations can be that the treatment effect could have been explained by other covariates no included in our analysis. Although we performed stepwise selection, the original set was a subset of the larger dataset that was guided by prior literature. Future extension should include a more proper sensitivity analysis to empirically feature select. 
+Possible limitations can be that the treatment effect could have been explained by other covariates no included in our analysis. Although we performed stepwise selection, the original set was a subset of the larger dataset that was guided by prior literature. Future extension should include a more proper sensitivity analysis to empirically feature select.
+
+\newpage
 
 \section{Acknowledgments}
 
-Peike Li wrote Methodology \& Main Analysis (Sec. \ref{sec:meth_analysis}) and Extension: Method (Sec. \ref{subsec:ExtMethod}). She also did coding for the Extension: Data Cleaning, Weighted Models. Darren Lin wrote Introduction (Sec. \ref{sec:intro}), Setup (Sec. \ref{sec:setup}), and Extension: Results (Sec. \ref{subex:ExtResults}). He further coded for the Extension: sourcing the data, Unweighted models, ATE calculations for regression model, and code cleaning. Timothy Shen wrote Discussion (Sec. \ref{sec:discussion}), Comments (Sec. \ref{sec:finalcomments}), Extensions: Introduction (Sec. \ref{subsec:ExtMotivation}), Methods (Sec. \ref{subsec:ExtMethod}), and Discussion (Sec. \ref{subsec:ExtDiscuss}), and final edits.  He also did coding for the Extension: ATE calculations for propensity score models. 
+Peike Li wrote Methodology \& Main Analysis (Sec. \ref{subsec:meth_analysis}) and Extension: Method (Sec. \ref{subsec:ExtMethod}). She also did coding for the Extension: Data Cleaning, Weighted Models. Darren Lin wrote Introduction (Sec. \ref{subsec:intro}), Setup (Sec. \ref{subsec:setup}), and Extension: Results (Sec. \ref{subsec:ExtResults}). He further coded for the Extension: sourcing the data, Unweighted models, ATE calculations for regression model, and code cleaning. Timothy Shen wrote Discussion (Sec. \ref{sec:discussion}), Comments (Sec. \ref{subsec:finalcomments}), Extensions: Introduction (Sec. \ref{subsec:ExtMotivation}), Methods (Sec. \ref{subsec:ExtMethod}), and Discussion (Sec. \ref{subsec:ExtDiscuss}), and final edits.  He also did coding for the Extension: ATE calculations for propensity score models. 
 
 Our code can be found here: \href{https://github.com/darrenlingit/biostat-m235-final-project}{Github Repo}.
 
+\newpage
 
 \bibliographystyle{plain}  % or "apalike", "ieeetr", "acm", etc.
 \bibliography{references}
